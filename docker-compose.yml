@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: bunmetop-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb-data:/data/db
+    networks:
+      - bunmetop-network
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongo-express:
+    image: mongo-express
+    container_name: bunmetop-mongo-express
+    environment:
+      - ME_CONFIG_MONGODB_SERVER=mongodb
+      - ME_CONFIG_MONGODB_PORT=27017
+      - ME_CONFIG_BASICAUTH_USERNAME=admin
+      - ME_CONFIG_BASICAUTH_PASSWORD=admin
+    ports:
+      - "8081:8081"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - bunmetop-network
+    restart: unless-stopped
+
+  redis:
+    image: redis:alpine
+    container_name: bunmetop-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - bunmetop-network
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bunmetop-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/bunmetop
+      - SPRING_DATA_REDIS_HOST=redis
+      - CLOUDINARY_URL=${CLOUDINARY_URL}
+      - CLOUD_NAME=${CLOUDNAME}
+      - API_KEY=${APIKEY}
+      - API_SECRET=${APISECRET}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - bunmetop-network
+    restart: unless-stopped
+
+volumes:
+  mongodb-data:
+  redis-data:
+
+
+networks:
+  bunmetop-network:
+    driver: bridge

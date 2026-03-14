@@ -24,9 +24,11 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String generateToken(String username) {
+    public String generateToken(com.bunmetop.domain.User user) {
         return Jwts.builder()
-                .subject(username)
+                .subject(user.getEmail())
+                .claim("userId", user.getId())
+                .claim("roles", user.getRoles())
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + expirationTime))
                 .signWith(getSignKey())

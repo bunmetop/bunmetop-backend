@@ -22,7 +22,7 @@ import java.util.Collections;
 public class SecurityConfig {
 
     @Bean
-    public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
+    public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http, JwtAuthenticationFilter jwtFilter) {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -35,8 +35,9 @@ public class SecurityConfig {
                         .pathMatchers(HttpMethod.GET, "/api/products/**").permitAll()
                         .pathMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                         .pathMatchers(HttpMethod.GET, "/api/merchants/**").permitAll()
-                        .anyExchange().permitAll()
+                        .anyExchange().authenticated()
                 )
+                .addFilterAt(jwtFilter, org.springframework.security.config.web.server.SecurityWebFiltersOrder.AUTHENTICATION)
                 .build();
     }
 

@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -28,7 +29,7 @@ public class AuthController {
         return userRepository.findByEmail(request.getEmail())
                 .filter(user -> passwordEncoder.matches(request.getPassword(), user.getPasswordHash()))
                 .map(user -> {
-                    String token = jwtUtil.generateToken(user.getEmail());
+                    String token = jwtUtil.generateToken(user);
                     return ResponseEntity.ok(AuthResponse.builder()
                             .token(token)
                             .userId(user.getId())
@@ -45,6 +46,7 @@ public class AuthController {
     public Mono<User> register(@RequestBody User user) {
         user.setPasswordHash(passwordEncoder.encode(user.getPasswordHash()));
         user.setEnabled(true);
+        user.setRoles(Collections.singletonList("ROLE_USER")); // Force default role
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
         return userRepository.save(user);
